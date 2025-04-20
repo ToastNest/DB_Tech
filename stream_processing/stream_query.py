@@ -48,6 +48,30 @@ def write_to_postgres(batch_df, batch_id):
         .save()
 
     print(f"✅ Batch {batch_id} written successfully.")
+    import psycopg2
+    conn = psycopg2.connect(
+        dbname="sales_data",
+        user="postgres",
+        password="postgres",
+        host="localhost",
+        port="5432"
+    )
+    cur = conn.cursor()
+    print("\nTop 3 Categories by Revenue (Stream):")
+    start = time.time()
+    cur.execute("""
+        SELECT category, SUM(amount) AS total_revenue
+        FROM stream_orders
+        GROUP BY category
+        ORDER BY total_revenue DESC
+        LIMIT 3;
+    """)
+    results = cur.fetchall()
+    print("Query time:", time.time() - start)
+    for row in results:
+        print(row)
+    cur.close()
+    conn.close()
     # except Exception as e:
     # print(f"❌ Error while writing batch {batch_id}:", e)
 
@@ -62,17 +86,17 @@ query = parsed.writeStream \
     .start()
     # .trigger(once=True) \
 
-try:
-    query = parsed.writeStream \
-        .foreachBatch(write_to_postgres) \
-        .outputMode("append") \
-        .trigger(once=True) \
-        .start()
+# try:
+query = parsed.writeStream \
+    .foreachBatch(write_to_postgres) \
+    .outputMode("append") \
+    .trigger(once=True) \
+    .start()
 
-    query.awaitTermination()
+query.awaitTermination()
 
-except Exception as e:
-    print("❌ Stream query failed to start or crashed:", e)
+# except Exception as e:
+#     print("❌ Stream query failed to start or crashed:", e)
 
 end_time = time.time()
-print(f"Stream processing took {end_time - start_time:.2f} seconds")
+print(f" ❌ Stream processing took {end_time - start_time:.2f} seconds")

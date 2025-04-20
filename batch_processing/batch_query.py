@@ -48,7 +48,13 @@ print("Batch insert time:", time.time() - start)
 
 # Optional query example
 start = time.time()
-cur.execute("SELECT category, SUM(amount) FROM batch_orders GROUP BY category")
+cur.execute("""
+    SELECT category, SUM(amount) AS total_revenue
+    FROM batch_orders
+    GROUP BY category
+    ORDER BY total_revenue DESC
+    LIMIT 3;
+""")
 result = cur.fetchall()
 print("Batch query time:", time.time() - start)
 print(result)
